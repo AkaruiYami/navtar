@@ -24,14 +24,14 @@ fn load_workspaces() -> Vec<Workspace> {
     let file = match File::open(get_data_file_path()) {
         Ok(f) => f,
         Err(e) if e.kind() == ErrorKind::NotFound => {
-            let new_ws_vec: Vec<&Workspace> = vec![];
+            let new_ws_vec: Vec<Workspace> = vec![];
             if let Err(er) = save_workspace(&new_ws_vec) {
                 panic!("Failed to create default workspace file: {}", er);
             }
             File::open(get_data_file_path())
                 .expect("Failed to reopen newly created workspace file.")
         }
-        Err(e) => panic!("Failled to load the workspaces."),
+        Err(e) => panic!("Failled to load the workspaces. Error: {}", e),
     };
     let reader = BufReader::new(file);
 
@@ -45,7 +45,7 @@ fn load_workspaces() -> Vec<Workspace> {
     result
 }
 
-fn save_workspace(ws_vec: &[&Workspace]) -> io::Result<File> {
+fn save_workspace(ws_vec: &[Workspace]) -> io::Result<File> {
     let mut file = OpenOptions::new()
         .write(true)
         .create(true)
@@ -72,24 +72,45 @@ fn append_workspace(ws: &Workspace) -> io::Result<&Workspace> {
 fn main() {
     let parser = commands::Cli::parse();
 
-    let all_workspace = load_workspaces();
+    let mut all_workspace = load_workspaces();
     match parser.cmd {
         Some(commands::Command::Add { name, path }) => {
+            // TODO: Check if the given path is valid or not
             let new_workspace = Workspace::new(&name, &path);
             match append_workspace(&new_workspace) {
                 Ok(ws) => println!("[Added]: {} -> {}", ws.name, ws.path.display()),
-                Err(e) => println!("Failed to add {}", new_workspace.name),
+                Err(e) => println!("Failed to add '{}'. Error: {}", new_workspace.name, e),
             }
         }
         Some(commands::Command::Get { name }) => {
-            todo!() // TODO: Implement the retrieval of workspace path
+            match all_workspace.iter().find(|ws| ws.name == name) {
+                Some(ws) => println!("\"{}\"", ws.get_path_string()),
+                // TODO: Prompt to add current dir instead
+                None => println!("'{}' does not exist!", name),
+            }
         }
         Some(commands::Command::Remove { name }) => {
-            todo!() // TODO: Implement the removing of the exisitng workspace
+            if let Some(idx) = all_workspace.iter().position(|ws| ws.name == name) {
+                let removed_ws = all_workspace.remove(idx);
+                println!("Removing '{}'...", removed_ws.name);
+                match save_workspace(&all_workspace) {
+                    Ok(v) => {
+                        println!("[Removed]: {}", removed_ws.name);
+                    }
+                    Err(e) => {
+                        print!("Removing operation failed. ");
+                        println!("Cannot update the workspace database.");
+                        println!("[Error]: {}", e);
+                        all_workspace.insert(idx, removed_ws);
+                    }
+                }
+            } else {
+                println!("'{}' does not exist!", name);
+            }
         }
         Some(commands::Command::List) => {
             for (i, ws) in all_workspace.iter().enumerate() {
-                println!("[{}] {} = {}", i + 1, ws.name, ws.get_path_string());
+                println!("[{}] {} = \"{}\"", i + 1, ws.name, ws.get_path_string());
             }
         }
         None => commands::Cli::command().print_help().unwrap(),
