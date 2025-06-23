@@ -52,7 +52,7 @@ fn save_workspace(ws_vec: &[&Workspace]) -> io::Result<File> {
         .truncate(true)
         .open(get_data_file_path())?;
     for ws in ws_vec {
-        writeln!(file, "{}-->{}", ws.name, ws.path.to_string_lossy())?;
+        writeln!(file, "{}-->{}", ws.name, ws.path.display())?;
     }
     file.flush()?;
     Ok(file)
@@ -64,7 +64,7 @@ fn append_workspace(ws: &Workspace) -> io::Result<&Workspace> {
         .create(true)
         .append(true)
         .open(get_data_file_path())?;
-    writeln!(file, "{}-->{}", ws.name, ws.path.to_string_lossy())?;
+    writeln!(file, "{}-->{}", ws.name, ws.path.display())?;
     file.flush()?;
     Ok(ws)
 }
@@ -77,7 +77,7 @@ fn main() {
         Some(commands::Command::Add { name, path }) => {
             let new_workspace = Workspace::new(&name, &path);
             match append_workspace(&new_workspace) {
-                Ok(ws) => println!("[Added]: {} -> {}", ws.name, ws.path.to_string_lossy()),
+                Ok(ws) => println!("[Added]: {} -> {}", ws.name, ws.path.display()),
                 Err(e) => println!("Failed to add {}", new_workspace.name),
             }
         }
@@ -89,7 +89,7 @@ fn main() {
         }
         Some(commands::Command::List) => {
             for (i, ws) in all_workspace.iter().enumerate() {
-                println!("[{}] {} = {}", i + 1, ws.name, ws.path.to_str().unwrap());
+                println!("[{}] {} = {}", i + 1, ws.name, ws.get_path_string());
             }
         }
         None => commands::Cli::command().print_help().unwrap(),
