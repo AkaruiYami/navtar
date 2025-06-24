@@ -74,18 +74,40 @@ fn append_workspace(ws: &Workspace) -> io::Result<&Workspace> {
     Ok(ws)
 }
 
+fn validate_workspace(ws: &Workspace) -> Result<(), String> {
+    if !ws.exists() {
+        return Err(format!("\"{}\" does not exist!", ws.get_path_string()));
+    }
+    if !ws.is_dir() {
+        return Err(format!("\"{}\" is not a directory!", ws.get_path_string()));
+    }
+    Ok(())
+}
+
+fn try_register_workspace(ws: &Workspace) {
+    match validate_workspace(ws) {
+        Ok(_) => match append_workspace(ws) {
+            Ok(ws) => {
+                println!("[Added]: {} -> \"{}\"", ws.name, ws.path.display())
+            }
+            Err(e) => {
+                println!("Failed to add '{}'. Error: {}", ws.name, e)
+            }
+        },
+        Err(e) => {
+            println!("Failed to add '{}'. Error: {}", ws.name, e)
+        }
+    }
+}
+
 fn main() {
     let parser = commands::Cli::parse();
 
     let mut all_workspace = load_workspaces();
     match parser.cmd {
         Some(commands::Command::Add { name, path }) => {
-            // TODO: Check if the given path is valid or not
             let new_workspace = Workspace::new(&name, &path);
-            match append_workspace(&new_workspace) {
-                Ok(ws) => println!("[Added]: {} -> {}", ws.name, ws.path.display()),
-                Err(e) => println!("Failed to add '{}'. Error: {}", new_workspace.name, e),
-            }
+            try_register_workspace(&new_workspace);
         }
         Some(commands::Command::Get { name }) => {
             match all_workspace.iter().find(|ws| ws.name == name) {
