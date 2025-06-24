@@ -84,6 +84,30 @@ fn validate_workspace(ws: &Workspace) -> Result<(), String> {
     Ok(())
 }
 
+fn prompt_add_new(name: &str) {
+    println!("'{}' does not exist!", name);
+    println!(
+        "Would you want to register current directory as '{}' instead [Y/n]",
+        name
+    );
+
+    use std::io::prelude::*;
+    use std::io::{stdin, stdout};
+
+    print!("> ");
+    stdout().flush().unwrap();
+
+    let mut input = String::new();
+    stdin().read_line(&mut input).unwrap();
+    let answer = input.trim().to_lowercase();
+
+    if answer == "y" || answer == "yes" || answer.is_empty() {
+        let current_dir = env::current_dir().expect("Unable to get current directory");
+        let new_workspace = Workspace::new(name, current_dir.to_str().unwrap());
+        try_register_workspace(&new_workspace);
+    }
+}
+
 fn try_register_workspace(ws: &Workspace) {
     match validate_workspace(ws) {
         Ok(_) => match append_workspace(ws) {
@@ -112,8 +136,7 @@ fn main() {
         Some(commands::Command::Get { name }) => {
             match all_workspace.iter().find(|ws| ws.name == name) {
                 Some(ws) => println!("\"{}\"", ws.get_path_string()),
-                // TODO: Prompt to add current dir instead
-                None => println!("'{}' does not exist!", name),
+                None => prompt_add_new(&name),
             }
         }
         Some(commands::Command::Remove { name }) => {
