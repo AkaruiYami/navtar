@@ -34,7 +34,6 @@ fn load_workspaces() -> Vec<Workspace> {
         Err(e) => panic!("Failled to load the workspaces. Error: {}", e),
     };
     let reader = BufReader::new(file);
-
     let mut result: Vec<Workspace> = Vec::new();
     for line in reader.lines().map_while(Result::ok) {
         if let Some((name, path_string)) = line.split_once("-->") {
@@ -59,11 +58,17 @@ fn save_workspace(ws_vec: &[Workspace]) -> io::Result<File> {
 }
 
 fn append_workspace(ws: &Workspace) -> io::Result<&Workspace> {
-    // TODO: Implement duplication validation
+    let existing_ws = load_workspaces();
+    if existing_ws.iter().any(|e_ws| e_ws.name == ws.name) {
+        let err_msg = format!("Workspace with name '{}' already existed!", ws.name);
+        return Err(io::Error::new(io::ErrorKind::AlreadyExists, err_msg));
+    }
+
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
         .open(get_data_file_path())?;
+
     writeln!(file, "{}-->{}", ws.name, ws.path.display())?;
     file.flush()?;
     Ok(ws)
