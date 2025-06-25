@@ -7,6 +7,7 @@ use std::{
     fs::{self, File, OpenOptions},
     io::{self, BufRead, BufReader, ErrorKind, Write},
     path::{Path, PathBuf},
+    process,
 };
 mod commands;
 mod workspace;
@@ -86,6 +87,7 @@ fn validate_workspace(ws: &Workspace) -> Result<(), String> {
 
 fn prompt_add_new(name: &str) {
     println!("'{}' does not exist!", name);
+    println!();
     println!(
         "Would you want to register current directory as '{}' instead [Y/n]",
         name
@@ -105,6 +107,9 @@ fn prompt_add_new(name: &str) {
         let current_dir = env::current_dir().expect("Unable to get current directory");
         let new_workspace = Workspace::new(name, current_dir.to_str().unwrap());
         try_register_workspace(&new_workspace);
+    } else {
+        println!("No workspace added.");
+        process::exit(-1);
     }
 }
 
