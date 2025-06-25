@@ -18,8 +18,9 @@ A simple CLI to jump between registered directories using short names.
     $wspExe = "path\to\navtar.exe"
     ```
 
-    > [!NOTE]
-    > In case you wonder where the heck is the navtar.exe, well... you have to build it first using `cargo build --release`
+> [!NOTE]
+> In case you wonder where the heck is the navtar.exe, well... you have to build it first using `cargo build --release`
+
 2. Place `wrapper.ps1` anywhere you like but take not the path. Recommended to put it inside your PowerShell profile directory.
 3. Then edit your PowerShell profile by adding the following line:
 
