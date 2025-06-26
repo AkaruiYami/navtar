@@ -59,12 +59,6 @@ fn save_workspace(ws_vec: &[Workspace]) -> io::Result<File> {
 }
 
 fn append_workspace(ws: &Workspace) -> io::Result<&Workspace> {
-    let existing_ws = load_workspaces();
-    if existing_ws.iter().any(|e_ws| e_ws.name == ws.name) {
-        let err_msg = format!("Workspace with name '{}' already existed!", ws.name);
-        return Err(io::Error::new(io::ErrorKind::AlreadyExists, err_msg));
-    }
-
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
@@ -76,6 +70,12 @@ fn append_workspace(ws: &Workspace) -> io::Result<&Workspace> {
 }
 
 fn validate_workspace(ws: &Workspace) -> Result<(), String> {
+    if load_workspaces().iter().any(|ews| ews.name == ws.name) {
+        return Err(format!(
+            "Name '{}' already being used! Please try other name.",
+            ws.name
+        ));
+    }
     if !ws.exists() {
         return Err(format!("\"{}\" does not exist!", ws.get_path_string()));
     }
@@ -150,7 +150,7 @@ fn main() {
                 println!("Removing '{}'...", removed_ws.name);
                 match save_workspace(&all_workspace) {
                     Ok(v) => {
-                        println!("[Removed]: {}", removed_ws.name);
+                        println!("[Removed]: '{}'", removed_ws.name);
                     }
                     Err(e) => {
                         print!("Removing operation failed. ");
@@ -165,9 +165,31 @@ fn main() {
         }
         Some(commands::Command::List) => {
             for (i, ws) in all_workspace.iter().enumerate() {
-                println!("[{}] {} = \"{}\"", i + 1, ws.name, ws.get_path_string());
+                println!("[{}] '{}' = \"{}\"", i + 1, ws.name, ws.get_path_string());
+            }
+        }
+        Some(commands::Command::Rename { old_name, new_name }) => {
+            if let Some(idx) = all_workspace.iter().position(|ws| ws.name == old_name) {
+                let old_path = &all_workspace[idx].get_path_string();
+                let new_ws = Workspace::new(&new_name, old_path);
+                match validate_workspace(&new_ws) {
+                    Ok(_) => {
+                        all_workspace[idx] = new_ws;
+                        save_workspace(&all_workspace);
+                        println!(
+                            "Successfuly rename workspace '{}' -> '{}' : \"{}\"",
+                            old_name, new_name, old_path
+                        );
+                    }
+                    Err(e) => {
+                        println!("Failed to rename. {}", e)
+                    }
+                }
+            } else {
+                println!("'{}' does not exist!", old_name);
             }
         }
         None => commands::Cli::command().print_help().unwrap(),
+        _ => panic!("Command not found."),
     }
 }

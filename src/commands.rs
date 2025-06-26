@@ -43,4 +43,12 @@ pub enum Command {
 
     /// List all registered ID together with its associated path.
     List,
+
+    /// Rename existing usnique ID to a new one
+    Rename {
+        /// Old unique ID
+        old_name: String,
+        /// New ID to change into
+        new_name: String,
+    },
 }

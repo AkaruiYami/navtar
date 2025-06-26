@@ -9,6 +9,7 @@ A simple CLI to jump between registered directories using short names.
 - `wm add blog .` -> Registered the current working directory under the name 'blog'.
 - `wm list` -> Show all workspaces
 - `wm remove blog` -> Delete workspace entry
+- `wm rename blog fog` -> Rename blog to fog
 
 ## Manual Installation
 
@@ -36,6 +37,8 @@ A simple CLI to jump between registered directories using short names.
 ## Future Plan
 
 - [ ] Create an installer or helper script to quickly setup this thing without the need of manual installation.
+- [ ] Make it available for Linux (?)
+- [ ] Implement name autocomplete/suggestion
 
 Well, this is my attempt to build something using Rust. There might be things that I will add later on. I do have similar tools
 but written in Python. However, I find it a bit slow especially to list the registered workspace. I call it workspace instead of directory

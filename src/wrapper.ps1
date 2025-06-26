@@ -44,6 +44,13 @@ function wm {
                 & $navtarExe get $Args[1]
             }
         }
+        "rename" {
+            if ($Args.Count -lt 3) {
+                Write-Host "Usage: wm rename <old_name> <new_name>" -ForegroundColor Yellow
+            } else {
+                & $navtarExe rename $Args[1] $Args[2]
+            }
+        }
         default {
             & $navtarExe get $Args[0]
             if ($LASTEXITCODE -eq 0) {
