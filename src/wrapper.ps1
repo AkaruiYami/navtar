@@ -1,65 +1,59 @@
 # This is the place where it will store the saved data
+# NOTE: Don't forget to change the $navtarExe to the path where you put the execuble is
 $ENV:NAVTAR_DIR = "$HOME\.data\navtar-data"
+
+$navtarExe = "path\to\navtar.exe"
 
 function wm {
     param(
-        [Parameter(ValueFromRemainingArguments = $true)]
-        [string[]]$Args
-    )
+        [Parameter(Position = 0)]
+        [string]$Name,
 
-    $navtarExe = "path\to\navtar.exe"
+        [Parameter(Position = 1)]
+        [string[]]$ExtraArgs
+    )
 
     if (!(Test-Path $navtarExe)) {
         Write-Host "Executable not found: $navtarExe" -ForegroundColor Red
         return
     }
 
-    if (-not $Args) {
+    if (-not $Name -or $Name -in @('-h', '--help')) {
         & $navtarExe --help
         return
     }
 
-    switch ($Args[0]) {
-        "list" {
-            & $navtarExe list
-        }
-        "add" {
-            if ($Args.Count -lt 3) {
-                Write-Host "Usage: wm add <name> <path>" -ForegroundColor Yellow
-            } else {
-                & $navtarExe add $Args[1] $Args[2]
-            }
-        }
-        "remove" {
-            if ($Args.Count -lt 2) {
-                Write-Host "Usage: wm remove <name>" -ForegroundColor Yellow
-            } else {
-                & $navtarExe remove $Args[1]
-            }
-        }
-        "get" {
-            if ($Args.Count -lt 2) {
-                Write-Host "Usage: wm get <name>" -ForegroundColor Yellow
-            } else {
-                & $navtarExe get $Args[1]
-            }
-        }
-        "rename" {
-            if ($Args.Count -lt 3) {
-                Write-Host "Usage: wm rename <old_name> <new_name>" -ForegroundColor Yellow
-            } else {
-                & $navtarExe rename $Args[1] $Args[2]
-            }
-        }
+    switch ($Name) {
+        "list"    { & $navtarExe list }
+        "add"     { & $navtarExe add $ExtraArgs[0] $ExtraArgs[1] }
+        "remove"  { & $navtarExe remove $ExtraArgs[0] }
+        "get"     { & $navtarExe get $ExtraArgs[0] }
+        "rename"  { & $navtarExe rename $ExtraArgs[0] $ExtraArgs[1] }
         default {
-            & $navtarExe get $Args[0]
+            & $navtarExe get $Name
             if ($LASTEXITCODE -eq 0) {
-                $target = (& $navtarExe get $Args[0]) | Select-Object -First 1
+                $target = (& $navtarExe get $Name) | Select-Object -First 1
                 $cleanTarget = $target.Trim('"')
                 if (Test-Path $cleanTarget) {
                     Set-Location $cleanTarget
                 }
             }
         }
+    }
+}
+
+Register-ArgumentCompleter -CommandName wm -ParameterName Name -ScriptBlock {
+    param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
+
+    if (Test-Path $navtarExe) {
+        & $navtarExe list |
+            ForEach-Object {
+                if ($_ -match "'([^']+)'") {
+                    $name = $matches[1]
+                    if ($name -like "$wordToComplete*") {
+                        [System.Management.Automation.CompletionResult]::new($name, $name, 'ParameterValue', $name)
+                    }
+                }
+            }
     }
 }
